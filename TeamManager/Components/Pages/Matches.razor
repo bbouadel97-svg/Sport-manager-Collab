@@ -1,0 +1,235 @@
+@page "/matches"
+@rendermode InteractiveServer
+@inject MatchService MatchService
+@inject MatchSimulationService MatchSimulationService
+@inject TeamService TeamService
+@inject IJSRuntime JS
+
+<PageTitle>Matches</PageTitle>
+
+<div class="game-page">
+<h1>Matches</h1>
+
+@if (!string.IsNullOrWhiteSpace(statusMessage))
+{
+    <div class="alert @statusCssClass" role="alert">
+        @statusMessage
+    </div>
+}
+
+@if (!hasEnoughTeams)
+{
+    <div class="alert alert-warning" role="alert">
+        You need at least 2 teams before creating matches.
+    </div>
+}
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Add Match</h5>
+        <EditForm Model="newMatch" OnValidSubmit="AddMatchAsync">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Home Team</label>
+                    <InputSelect class="form-select" @bind-Value="newMatch.HomeTeamId" disabled="@(!hasEnoughTeams)">
+                        <option value="0">Choose team</option>
+                        @foreach (var team in teams)
+                        {
+                            <option value="@team.Id">@team.Name</option>
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="() => newMatch.HomeTeamId" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Away Team</label>
+                    <InputSelect class="form-select" @bind-Value="newMatch.AwayTeamId" disabled="@(!hasEnoughTeams)">
+                        <option value="0">Choose team</option>
+                        @foreach (var team in teams)
+                        {
+                            <option value="@team.Id" disabled="@(team.Id == newMatch.HomeTeamId)">@team.Name</option>
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="() => newMatch.AwayTeamId" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Date</label>
+                    <InputDate class="form-control" @bind-Value="newMatch.MatchDate" disabled="@(!hasEnoughTeams)" />
+                    <ValidationMessage For="() => newMatch.MatchDate" />
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary mt-3" disabled="@(!hasEnoughTeams)">Add Match</button>
+        </EditForm>
+    </div>
+</div>
+
+<div class="row g-3">
+    @if (matches.Count == 0)
+    {
+        <div class="col-12">
+            <div class="alert alert-secondary mb-0">No matches yet.</div>
+        </div>
+    }
+
+    @foreach (var match in matches)
+    {
+        <div class="col-lg-6">
+            <div class="fixture-card p-3 h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <small class="text-light-emphasis">@match.MatchDate.ToShortDateString()</small>
+                    @if (match.IsPlayed)
+                    {
+                        <span class="badge text-bg-success">Played</span>
+                    }
+                    else
+                    {
+                        <span class="badge text-bg-secondary">Not Played</span>
+                    }
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="fw-semibold text-truncate pe-2">@match.HomeTeam?.Name</div>
+                    <div class="fixture-score">
+                        @if (match.IsPlayed)
+                        {
+                            <span>@match.HomeScore - @match.AwayScore</span>
+                        }
+                        else
+                        {
+                            <span>VS</span>
+                        }
+                    </div>
+                    <div class="fw-semibold text-truncate ps-2 text-end">@match.AwayTeam?.Name</div>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm btn-success" @onclick="() => SimulateMatchAsync(match.Id)" disabled="@match.IsPlayed">Simulate Match</button>
+                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteMatchAsync(match.Id)">Delete</button>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+</div>
+
+@code {
+    private readonly Match newMatch = new() { MatchDate = DateTime.Today };
+    private List<Match> matches = new();
+    private List<Team> teams = new();
+    private string statusMessage = string.Empty;
+    private string statusCssClass = "alert-info";
+    private bool hasEnoughTeams;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTeamsAsync();
+        await LoadMatchesAsync();
+    }
+
+    private async Task AddMatchAsync()
+    {
+        if (!hasEnoughTeams)
+        {
+            ShowError("You need at least 2 teams before creating matches.");
+            return;
+        }
+
+        if (newMatch.HomeTeamId == 0 || newMatch.AwayTeamId == 0)
+        {
+            ShowError("Please choose both home and away teams.");
+            return;
+        }
+
+        if (newMatch.HomeTeamId == newMatch.AwayTeamId)
+        {
+            ShowError("Home team and away team must be different.");
+            return;
+        }
+
+        try
+        {
+            await MatchService.AddAsync(new Match
+            {
+                HomeTeamId = newMatch.HomeTeamId,
+                AwayTeamId = newMatch.AwayTeamId,
+                MatchDate = newMatch.MatchDate,
+                HomeScore = null,
+                AwayScore = null,
+                IsPlayed = false
+            });
+
+            ShowSuccess("Match created successfully.");
+
+            newMatch.HomeTeamId = 0;
+            newMatch.AwayTeamId = 0;
+            newMatch.MatchDate = DateTime.Today;
+
+            await LoadMatchesAsync();
+        }
+        catch (Exception ex)
+        {
+            ShowError(ex.Message);
+        }
+    }
+
+    private async Task SimulateMatchAsync(int matchId)
+    {
+        var result = await MatchSimulationService.SimulateMatchAsync(matchId);
+
+        if (!result.Success)
+        {
+            ShowError(result.Message);
+            return;
+        }
+
+        ShowSuccess($"Simulation complete: {result.HomeScore} - {result.AwayScore}");
+        await LoadMatchesAsync();
+    }
+
+    private async Task DeleteMatchAsync(int id)
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Delete this match?");
+        if (!confirmed)
+        {
+            return;
+        }
+
+        try
+        {
+            await MatchService.DeleteAsync(id);
+            ShowSuccess("Match deleted successfully.");
+            await LoadMatchesAsync();
+        }
+        catch (Exception ex)
+        {
+            ShowError(ex.Message);
+        }
+    }
+
+    private async Task LoadMatchesAsync()
+    {
+        matches = await MatchService.GetAllAsync();
+    }
+
+    private async Task LoadTeamsAsync()
+    {
+        teams = await TeamService.GetAllAsync();
+        hasEnoughTeams = teams.Count >= 2;
+    }
+
+    private void ShowError(string message)
+    {
+        statusMessage = message;
+        statusCssClass = "alert-danger";
+    }
+
+    private void ShowSuccess(string message)
+    {
+        statusMessage = message;
+        statusCssClass = "alert-success";
+    }
+}
+

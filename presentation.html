@@ -1,0 +1,750 @@
+<!doctype html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Sport Manager - Présentation</title>
+
+    <style>
+        :root {
+            --bg: #050b12;
+            --bg-2: #0b1625;
+            --panel: #111d2d;
+            --panel-2: #17293d;
+            --line: #304863;
+            --text: #edf4ff;
+            --muted: #adc0dc;
+            --green: #22d190;
+            --blue: #3e9bff;
+            --red: #ff5a6d;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+            background: radial-gradient(circle at 15% 0%, #14304f 0%, var(--bg) 58%);
+            color: var(--text);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+
+        .deck {
+            width: min(1200px, 98vw);
+            min-height: 88vh;
+            border: 1px solid var(--line);
+            border-radius: 18px;
+            overflow: hidden;
+            background: linear-gradient(160deg, var(--bg-2), #0a1320 65%);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .progress-top {
+            height: 8px;
+            background: #17253b;
+            border-bottom: 1px solid #24344f;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0;
+            background: linear-gradient(90deg, var(--green), var(--blue));
+            box-shadow: 0 0 10px rgba(34, 209, 144, 0.4);
+            transition: width 0.25s ease;
+        }
+
+        .slides {
+            padding: 2.2rem;
+            flex: 1;
+            position: relative;
+            overflow-y: auto;
+        }
+
+        .slide {
+            display: none;
+            animation: fadeIn 0.28s ease;
+        }
+
+        .slide.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h1,
+        h2,
+        h3 {
+            margin: 0 0 0.8rem;
+        }
+
+        h1 {
+            font-size: clamp(2.2rem, 4.4vw, 3.4rem);
+        }
+
+        h2 {
+            font-size: clamp(1.45rem, 2.8vw, 2.1rem);
+        }
+
+        h3 {
+            font-size: 1.05rem;
+        }
+
+        p,
+        li {
+            color: var(--muted);
+            line-height: 1.6;
+        }
+
+        .kicker {
+            display: inline-block;
+            margin-bottom: 0.6rem;
+            font-size: 0.82rem;
+            letter-spacing: 0.08em;
+            color: var(--green);
+            text-transform: uppercase;
+            font-weight: 700;
+        }
+
+        .hero {
+            border: 1px solid #3b628a;
+            border-radius: 18px;
+            background: linear-gradient(145deg, rgba(62, 155, 255, 0.24), rgba(34, 209, 144, 0.2));
+            padding: 2.8rem 1.3rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::after {
+            content: "";
+            position: absolute;
+            inset: auto -30% -35% auto;
+            width: 280px;
+            height: 280px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(34, 209, 144, 0.28), transparent 70%);
+        }
+
+        .hero p {
+            max-width: 760px;
+            margin: 0.6rem auto 0;
+        }
+
+        .hero-subtitle {
+            color: #d4e6ff;
+            font-size: clamp(1.1rem, 2vw, 1.4rem);
+            margin-bottom: 0.8rem;
+            font-weight: 600;
+        }
+
+        .hero-team {
+            margin-top: 1rem;
+            color: #c0d6f7;
+            font-size: 0.95rem;
+            border-top: 1px dashed rgba(219, 232, 252, 0.35);
+            padding-top: 0.9rem;
+            display: inline-block;
+        }
+
+        .grid-2,
+        .grid-3,
+        .grid-4 {
+            display: grid;
+            gap: 1.05rem;
+        }
+
+        .grid-2 {
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        }
+
+        .grid-3 {
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        }
+
+        .grid-4 {
+            grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+        }
+
+        .card {
+            background: linear-gradient(180deg, var(--panel), var(--panel-2));
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            padding: 1rem 1.05rem;
+            box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+        }
+
+        .checklist {
+            margin: 0;
+            padding: 0;
+        }
+
+        .checklist li {
+            list-style: none;
+            margin: 0.45rem 0;
+            padding-left: 1.45rem;
+            position: relative;
+        }
+
+        .checklist li::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: var(--green);
+            font-weight: 700;
+        }
+
+        .controls {
+            border-top: 1px solid var(--line);
+            background: #0b1220;
+            padding: 0.9rem 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 0.7rem;
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 0.55rem;
+        }
+
+        .btn {
+            border: 1px solid #2d4869;
+            background: linear-gradient(180deg, #173150, #132740);
+            color: var(--text);
+            border-radius: 10px;
+            padding: 0.58rem 0.95rem;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .btn:hover {
+            background: linear-gradient(180deg, #214268, #173150);
+            border-color: #3e6d99;
+        }
+
+        .btn:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        .counter {
+            font-weight: 700;
+            color: #dce9ff;
+            font-size: 0.95rem;
+            background: rgba(62, 155, 255, 0.12);
+            border: 1px solid rgba(62, 155, 255, 0.35);
+            border-radius: 999px;
+            padding: 0.35rem 0.7rem;
+        }
+
+        .score-show {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #ffffff;
+            text-align: center;
+            margin-top: 0.2rem;
+        }
+
+        .diagram-card {
+            border: 1px solid #335274;
+            background: linear-gradient(180deg, #0f1d2e, #112235);
+        }
+
+        .diagram-target {
+            margin-top: 0.8rem;
+            background: rgba(6, 12, 24, 0.6);
+            border: 1px solid #335274;
+            border-radius: 12px;
+            padding: 1rem;
+            overflow-x: auto;
+            min-height: 250px;
+        }
+
+        .diagram-target svg {
+            max-width: 100%;
+            height: auto;
+        }
+
+        .small-note {
+            margin-top: 0.7rem;
+            font-size: 0.9rem;
+            color: #98aecd;
+        }
+
+        .hidden-mermaid {
+            display: none;
+        }
+
+        @media (max-width: 720px) {
+            .slides {
+                padding: 1.2rem;
+            }
+
+            .deck {
+                min-height: 92vh;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div class="deck">
+    <div class="progress-top">
+        <div id="progressBar" class="progress-bar"></div>
+    </div>
+
+    <div class="slides" id="slides">
+
+        <section class="slide active">
+            <div class="hero">
+                <span class="kicker">Présentation du projet</span>
+                <h1>Sport Manager</h1>
+                <div class="hero-subtitle">Simulation de gestion d’équipe sportive</div>
+                <p>Projet scolaire développé avec Blazor et C#</p>
+                <div class="hero-team">Membres de l’équipe : Étudiant 1 - Étudiant 2 - Étudiant 3 - Étudiant 4</div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <span class="kicker">Slide 2</span>
+            <h2>Objectif du projet</h2>
+
+            <div class="grid-2">
+                <div class="card"><h3>Gérer des équipes sportives</h3><p>Créer, modifier et organiser des équipes.</p></div>
+                <div class="card"><h3>Gérer des joueurs</h3><p>Suivre les informations et compétences des joueurs.</p></div>
+                <div class="card"><h3>Gérer des postes</h3><p>Définir les profils et compétences nécessaires.</p></div>
+                <div class="card"><h3>Simuler des matchs</h3><p>Produire des scores avec logique et aléatoire.</p></div>
+                <div class="card"><h3>Gérer les blessures</h3><p>Affecter la disponibilité des joueurs.</p></div>
+                <div class="card"><h3>Améliorer l’expérience utilisateur</h3><p>Interface style jeu de simulation sportive.</p></div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <span class="kicker">Slide 3</span>
+            <h2>Exigences du sujet</h2>
+
+            <ul class="checklist">
+                <li>Programmation orientée objet</li>
+                <li>Diagrammes UML</li>
+                <li>Interface graphique</li>
+                <li>ORM avec Entity Framework Core</li>
+                <li>CRUD des joueurs</li>
+                <li>CRUD des équipes</li>
+                <li>Gestion des postes et des compétences</li>
+                <li>Simulation des matchs</li>
+                <li>Blessures aléatoires</li>
+                <li>Jeu de données cohérent</li>
+            </ul>
+        </section>
+
+        <section class="slide">
+            <span class="kicker">Slide 4</span>
+            <h2>Technologies utilisées</h2>
+
+            <div class="grid-3">
+                <div class="card"><h3>Blazor</h3><p>Interface web interactive.</p></div>
+                <div class="card"><h3>C#</h3><p>Logique métier et services.</p></div>
+                <div class="card"><h3>Entity Framework Core</h3><p>ORM pour gérer la base de données.</p></div>
+                <div class="card"><h3>SQLite</h3><p>Base de données locale simple.</p></div>
+                <div class="card"><h3>Bootstrap / CSS</h3><p>Design responsive et moderne.</p></div>
+                <div class="card"><h3>DiceBear API</h3><p>Avatars générés pour les joueurs.</p></div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <span class="kicker">Slide 5</span>
+            <h2>Architecture de l’application</h2>
+
+            <div class="grid-4">
+                <div class="card"><h3>Pages Blazor</h3><p>Interface utilisateur</p></div>
+                <div class="card"><h3>Services</h3><p>Logique métier</p></div>
+                <div class="card"><h3>Modèles</h3><p>Classes principales</p></div>
+                <div class="card"><h3>DbContext</h3><p>Accès aux données</p></div>
+            </div>
+
+            <div class="card" style="margin-top:1rem;">
+                <h3>Base SQLite</h3>
+                <p>Le DbContext communique avec la base SQLite grâce à Entity Framework Core.</p>
+            </div>
+        </section>
+
+        <section class="slide">
+            <span class="kicker">Slide 6</span>
+            <h2>Fonctionnalités principales</h2>
+
+            <div class="grid-3">
+                <div class="card"><h3>Tableau de bord</h3></div>
+                <div class="card"><h3>Gestion des équipes</h3></div>
+                <div class="card"><h3>Gestion des joueurs</h3></div>
+                <div class="card"><h3>Gestion des postes</h3></div>
+                <div class="card"><h3>Simulation des matchs</h3></div>
+                <div class="card"><h3>Gestion des blessures</h3></div>
+                <div class="card"><h3>Avatars des joueurs</h3></div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <span class="kicker">Slide 7</span>
+            <h2>Gestion des joueurs</h2>
+
+            <div class="grid-2">
+                <div class="card"><p>Ajouter, modifier et supprimer des joueurs.</p></div>
+                <div class="card"><p>Assigner une équipe et un poste.</p></div>
+                <div class="card"><p>Gérer les compétences : vitesse, endurance, force, technique.</p></div>
+                <div class="card"><p>Calculer une note globale automatiquement.</p></div>
+                <div class="card"><p>Afficher l’avatar et l’état de blessure.</p></div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <span class="kicker">Slide 8</span>
+            <h2>Simulation des matchs</h2>
+
+            <div class="grid-2">
+                <div class="card">
+                    <ul>
+                        <li>Sélection d’une équipe domicile et d’une équipe extérieure</li>
+                        <li>Les joueurs blessés sont exclus</li>
+                        <li>La force d’une équipe est calculée à partir des compétences</li>
+                        <li>Une part d’aléatoire rend les résultats moins prévisibles</li>
+                        <li>Le score final est enregistré</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <p>Exemple d’affichage type jeu :</p>
+                    <div class="score-show">2 - 1</div>
+                    <p style="text-align:center;">Équipe A vs Équipe B</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <span class="kicker">Slide 9</span>
+            <h2>Système de blessures</h2>
+
+            <div class="grid-2">
+                <div class="card"><p>Après un match, certains joueurs peuvent se blesser aléatoirement.</p></div>
+                <div class="card"><p>Une faible endurance augmente le risque de blessure.</p></div>
+                <div class="card"><p>Les joueurs blessés ne peuvent plus participer aux prochains matchs.</p></div>
+                <div class="card"><p>Les joueurs peuvent être marqués comme rétablis.</p></div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <span class="kicker">Slide 10</span>
+            <h2>Fonctionnalité supplémentaire : avatars</h2>
+
+            <div class="grid-2">
+                <div class="card"><p>Chaque joueur possède un avatar généré.</p></div>
+                <div class="card"><p>L’avatar est basé sur l’identifiant du joueur ou une graine stable.</p></div>
+                <div class="card"><p>Le même joueur garde toujours le même avatar.</p></div>
+                <div class="card"><p>Cela rend l’application plus proche d’un jeu de simulation sportive.</p></div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <span class="kicker">Slide 11</span>
+            <h2>Diagramme UML des classes</h2>
+
+            <div class="card diagram-card">
+                <p class="small-note">Vue simplifiée des classes principales et de leurs relations.</p>
+
+                <div id="umlDiagram" class="diagram-target"></div>
+
+                <script type="text/plain" id="umlSource">
+                    classDiagram
+                        class Team {
+                            +int Id
+                            +string Name
+                            +string City
+                        }
+                    
+                        class Player {
+                            +int Id
+                            +string FirstName
+                            +string LastName
+                            +int Age
+                            +int Speed
+                            +int Endurance
+                            +int Strength
+                            +int Technique
+                            +bool IsInjured
+                            +int TeamId
+                            +int PositionId
+                        }
+                    
+                        class Position {
+                            +int Id
+                            +string Name
+                            +int NeededSpeed
+                            +int NeededEndurance
+                            +int NeededStrength
+                            +int NeededTechnique
+                        }
+                    
+                        class Match {
+                            +int Id
+                            +int HomeTeamId
+                            +int AwayTeamId
+                            +int HomeScore
+                            +int AwayScore
+                            +DateTime MatchDate
+                            +bool IsPlayed
+                        }
+                    
+                        class Injury {
+                            +int Id
+                            +int PlayerId
+                            +string Description
+                            +DateTime InjuryDate
+                            +int RecoveryDays
+                        }
+                    
+                        class MatchSimulationService {
+                            +SimulateMatch()
+                            +CalculateTeamStrength()
+                        }
+                    
+                        class InjuryService {
+                            +GenerateInjuries()
+                            +MarkAsRecovered()
+                        }
+                    
+                        class AvatarService {
+                            +GetAvatarUrl()
+                        }
+                    
+                        class SportManagerDbContext {
+                            +Teams
+                            +Players
+                            +Positions
+                            +Matches
+                            +Injuries
+                        }
+                    
+                        Team "1" --> "0..*" Player : contient
+                        Position "1" --> "0..*" Player : assigne
+                        Player "1" --> "0..*" Injury : blessures
+                        Match "0..*" --> "1" Team : domicile
+                        Match "0..*" --> "1" Team : exterieur
+                        MatchSimulationService --> SportManagerDbContext : utilise
+                        InjuryService --> SportManagerDbContext : utilise
+                        AvatarService --> Player : genere
+                </script>
+            </div>
+        </section>
+
+        <section class="slide">
+            <span class="kicker">Slide 12</span>
+            <h2>Modèle de base de données</h2>
+
+            <div class="card diagram-card">
+                <p class="small-note">Schéma simplifié des tables principales de la base SQLite.</p>
+
+                <div id="databaseDiagram" class="diagram-target"></div>
+
+                <script type="text/plain" id="databaseSource">
+                    flowchart LR
+                        TEAMS["TEAMS<br>Id : int<br>Name : string<br>City : string"]
+                        PLAYERS["PLAYERS<br>Id : int<br>FirstName : string<br>LastName : string<br>Age : int<br>TeamId : int<br>PositionId : int<br>Speed : int<br>Endurance : int<br>Strength : int<br>Technique : int<br>IsInjured : bool"]
+                        POSITIONS["POSITIONS<br>Id : int<br>Name : string<br>NeededSpeed : int<br>NeededEndurance : int<br>NeededStrength : int<br>NeededTechnique : int"]
+                        MATCHES["MATCHES<br>Id : int<br>HomeTeamId : int<br>AwayTeamId : int<br>HomeScore : int<br>AwayScore : int<br>MatchDate : string<br>IsPlayed : bool"]
+                        INJURIES["INJURIES<br>Id : int<br>PlayerId : int<br>Description : string<br>InjuryDate : string<br>RecoveryDays : int"]
+                    
+                        TEAMS -->|"has many"| PLAYERS
+                        POSITIONS -->|"has many"| PLAYERS
+                        PLAYERS -->|"has many"| INJURIES
+                        TEAMS -->|"home team"| MATCHES
+                        TEAMS -->|"away team"| MATCHES
+                </script>
+            </div>
+        </section>
+
+        <section class="slide">
+            <span class="kicker">Slide 13</span>
+            <h2>Choix de design</h2>
+
+            <div class="grid-2">
+                <div class="card"><p>Interface sombre inspirée des jeux de sport.</p></div>
+                <div class="card"><p>Navigation latérale claire et rapide.</p></div>
+                <div class="card"><p>Cartes pour le tableau de bord et les équipes.</p></div>
+                <div class="card"><p>Barres de compétences pour les joueurs.</p></div>
+                <div class="card"><p>Affichage visuel du score des matchs.</p></div>
+                <div class="card"><p>Badges rouges pour les joueurs blessés.</p></div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <span class="kicker">Slide 14</span>
+            <h2>Problèmes rencontrés et solutions</h2>
+
+            <div class="grid-2">
+                <div class="card"><h3>Empêcher une équipe de jouer contre elle-même</h3><p>Validation sur la sélection domicile / extérieur.</p></div>
+                <div class="card"><h3>Exclure les joueurs blessés</h3><p>Filtrage automatique des joueurs indisponibles.</p></div>
+                <div class="card"><h3>Gérer les listes vides</h3><p>Messages simples si aucune donnée n’est disponible.</p></div>
+                <div class="card"><h3>Garder une interface lisible</h3><p>Utilisation de cartes, badges et composants Bootstrap.</p></div>
+                <div class="card"><h3>Séparer la logique</h3><p>Utilisation de services pour éviter de tout mettre dans les pages.</p></div>
+            </div>
+        </section>
+
+        <section class="slide">
+            <span class="kicker">Slide 15</span>
+            <h2>Améliorations possibles</h2>
+
+            <div class="card">
+                <ul>
+                    <li>Classement de championnat</li>
+                    <li>Statistiques plus détaillées</li>
+                    <li>Transfert de joueurs</li>
+                    <li>Historique complet des blessures</li>
+                    <li>Règles de simulation plus avancées</li>
+                    <li>Authentification des utilisateurs</li>
+                </ul>
+            </div>
+        </section>
+
+        <section class="slide">
+            <span class="kicker">Slide 16</span>
+            <h2>Conclusion</h2>
+
+            <div class="grid-2">
+                <div class="card"><p>L’application répond aux exigences du sujet.</p></div>
+                <div class="card"><p>Elle utilise la POO, l’ORM, une interface graphique, les CRUD, la simulation et UML.</p></div>
+                <div class="card"><p>Le résultat est une application simple, complète et présentable.</p></div>
+            </div>
+        </section>
+    </div>
+
+    <div class="controls">
+        <div class="btn-row">
+            <button id="prevBtn" class="btn" type="button">◀ Précédent</button>
+            <button id="nextBtn" class="btn" type="button">Suivant ▶</button>
+        </div>
+        <div id="counter" class="counter">1 / 16</div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+
+<script>
+    mermaid.initialize({
+        startOnLoad: false,
+        theme: "dark",
+        securityLevel: "loose",
+        flowchart: {
+            htmlLabels: true
+        }
+    });
+
+    const renderedDiagrams = {};
+
+    async function renderDiagram(sourceId, targetId, renderId) {
+        if (renderedDiagrams[targetId]) {
+            return;
+        }
+
+        const sourceElement = document.getElementById(sourceId);
+        const targetElement = document.getElementById(targetId);
+
+        if (!sourceElement || !targetElement) {
+            return;
+        }
+
+        const diagramCode = sourceElement.textContent.trim();
+
+        try {
+            const result = await mermaid.render(renderId, diagramCode);
+            targetElement.innerHTML = result.svg;
+            renderedDiagrams[targetId] = true;
+        } catch (error) {
+            targetElement.innerHTML =
+                "<p style='color:#ff8a96;'>Erreur de rendu du diagramme Mermaid.</p><pre style='white-space:pre-wrap;color:#adc0dc;'>" +
+                diagramCode.replace(/</g, "&lt;").replace(/>/g, "&gt;") +
+                "</pre>";
+            console.error(error);
+        }
+    }
+
+    (function () {
+        const slides = Array.from(document.querySelectorAll(".slide"));
+        const prevBtn = document.getElementById("prevBtn");
+        const nextBtn = document.getElementById("nextBtn");
+        const counter = document.getElementById("counter");
+        const progressBar = document.getElementById("progressBar");
+
+        let current = 0;
+
+        function updateSlides() {
+            slides.forEach((slide, i) => {
+                slide.classList.toggle("active", i === current);
+            });
+
+            const currentHuman = current + 1;
+            counter.textContent = currentHuman + " / " + slides.length;
+            progressBar.style.width = (currentHuman / slides.length) * 100 + "%";
+
+            prevBtn.disabled = current === 0;
+            nextBtn.disabled = current === slides.length - 1;
+
+            if (current === 10) {
+                renderDiagram("umlSource", "umlDiagram", "umlDiagramSvg");
+            }
+
+            if (current === 11) {
+                renderDiagram("databaseSource", "databaseDiagram", "databaseDiagramSvg");
+            }
+        }
+
+        function nextSlide() {
+            if (current < slides.length - 1) {
+                current += 1;
+                updateSlides();
+            }
+        }
+
+        function previousSlide() {
+            if (current > 0) {
+                current -= 1;
+                updateSlides();
+            }
+        }
+
+        prevBtn.addEventListener("click", previousSlide);
+        nextBtn.addEventListener("click", nextSlide);
+
+        document.addEventListener("keydown", function (event) {
+            if (event.key === "ArrowRight") {
+                nextSlide();
+            }
+
+            if (event.key === "ArrowLeft") {
+                previousSlide();
+            }
+        });
+
+        updateSlides();
+    })();
+</script>
+</body>
+</html>

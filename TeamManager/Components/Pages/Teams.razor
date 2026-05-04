@@ -1,0 +1,199 @@
+@page "/teams"
+@rendermode InteractiveServer
+@inject TeamService TeamService
+@inject PlayerService PlayerService
+@inject IJSRuntime JS
+
+<PageTitle>Teams</PageTitle>
+
+<div class="game-page">
+<h1>Teams</h1>
+
+@if (!string.IsNullOrWhiteSpace(statusMessage))
+{
+    <div class="alert @statusCssClass" role="alert">@statusMessage</div>
+}
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">@(isEditMode ? "Edit Team" : "Add Team")</h5>
+        <EditForm Model="formTeam" OnValidSubmit="SaveTeamAsync">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Team Name</label>
+                    <InputText class="form-control" @bind-Value="formTeam.Name" />
+                    <ValidationMessage For="() => formTeam.Name" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">City</label>
+                    <InputText class="form-control" @bind-Value="formTeam.City" />
+                    <ValidationMessage For="() => formTeam.City" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Coach Name</label>
+                    <InputText class="form-control" @bind-Value="formTeam.CoachName" />
+                </div>
+            </div>
+
+            <div class="mt-3 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">@(isEditMode ? "Update Team" : "Add Team")</button>
+                @if (isEditMode)
+                {
+                    <button type="button" class="btn btn-outline-secondary" @onclick="CancelEdit">Cancel</button>
+                }
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+<div class="row g-3">
+    @if (teams.Count == 0)
+    {
+        <div class="col-12">
+            <div class="alert alert-secondary mb-0">No teams yet.</div>
+        </div>
+    }
+
+    @foreach (var team in teams)
+    {
+        <div class="col-md-6 col-xl-4">
+            <div class="card sport-card h-100">
+                <div class="card-body d-flex flex-column gap-2">
+                    <div>
+                        <h5 class="mb-1">@team.Name</h5>
+                        <small class="text-light-emphasis">@team.City</small>
+                    </div>
+
+                    <div class="d-flex flex-wrap gap-2">
+                        <span class="badge text-bg-primary">Players: @team.PlayerCount</span>
+                        <span class="badge text-bg-warning">Avg Rating: @GetTeamAverageRating(team.Id)</span>
+                        <span class="badge text-bg-danger">Injured: @GetInjuredCount(team.Id)</span>
+                    </div>
+
+                    <div class="small text-light-emphasis">Coach: @(string.IsNullOrWhiteSpace(team.CoachName) ? "Not set" : team.CoachName)</div>
+
+                    <div class="mt-auto d-flex gap-2">
+                        <a href="players" class="btn btn-sm btn-outline-light">View Players</a>
+                        <button class="btn btn-sm btn-outline-primary" @onclick="() => StartEdit(team)">Manage Team</button>
+                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteTeamAsync(team.Id)">Delete</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+</div>
+
+@code {
+    private Team formTeam = new();
+    private bool isEditMode;
+    private List<Team> teams = new();
+    private List<Player> players = new();
+    private string statusMessage = string.Empty;
+    private string statusCssClass = "alert-success";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+    }
+
+    private async Task SaveTeamAsync()
+    {
+        try
+        {
+            if (isEditMode)
+            {
+                await TeamService.UpdateAsync(formTeam);
+                ShowSuccess("Team updated successfully.");
+            }
+            else
+            {
+                await TeamService.AddAsync(formTeam);
+                ShowSuccess("Team created successfully.");
+            }
+
+            CancelEdit();
+            await LoadDataAsync();
+        }
+        catch (Exception ex)
+        {
+            ShowError(ex.Message);
+        }
+    }
+
+    private void StartEdit(Team team)
+    {
+        isEditMode = true;
+        formTeam = new Team
+        {
+            Id = team.Id,
+            Name = team.Name,
+            City = team.City,
+            CoachName = team.CoachName
+        };
+    }
+
+    private void CancelEdit()
+    {
+        isEditMode = false;
+        formTeam = new Team();
+    }
+
+    private async Task DeleteTeamAsync(int id)
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Delete this team?");
+        if (!confirmed)
+        {
+            return;
+        }
+
+        try
+        {
+            await TeamService.DeleteAsync(id);
+            ShowSuccess("Team deleted successfully.");
+            await LoadDataAsync();
+        }
+        catch (Exception ex)
+        {
+            ShowError(ex.Message);
+        }
+    }
+
+    private async Task LoadDataAsync()
+    {
+        teams = await TeamService.GetAllAsync();
+        players = await PlayerService.GetAllAsync();
+    }
+
+    private string GetTeamAverageRating(int teamId)
+    {
+        var teamPlayers = players.Where(p => p.TeamId == teamId).ToList();
+        if (teamPlayers.Count == 0)
+        {
+            return "0";
+        }
+
+        return Math.Round(teamPlayers.Average(p => p.OverallRating), 1).ToString("0.0");
+    }
+
+    private int GetInjuredCount(int teamId)
+    {
+        return players.Count(p => p.TeamId == teamId && p.IsInjured);
+    }
+
+    private void ShowSuccess(string message)
+    {
+        statusMessage = message;
+        statusCssClass = "alert-success";
+    }
+
+    private void ShowError(string message)
+    {
+        statusMessage = message;
+        statusCssClass = "alert-danger";
+    }
+}
+

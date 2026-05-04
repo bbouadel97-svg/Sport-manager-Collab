@@ -1,0 +1,81 @@
+@page "/injuries"
+@rendermode InteractiveServer
+@inject InjuryService InjuryService
+
+<PageTitle>Injuries</PageTitle>
+
+<div class="game-page">
+<h1>Injuries</h1>
+
+@if (!string.IsNullOrWhiteSpace(statusMessage))
+{
+    <div class="alert @statusCssClass" role="alert">@statusMessage</div>
+}
+
+<div class="row g-3">
+    @if (injuries.Count == 0)
+    {
+        <div class="col-12">
+            <div class="alert alert-secondary mb-0">No injured players right now.</div>
+        </div>
+    }
+
+    @foreach (var injury in injuries)
+    {
+        <div class="col-md-6">
+            <div class="card sport-card h-100 border-danger">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <div>
+                            <h6 class="mb-0">@injury.Player?.FirstName @injury.Player?.LastName</h6>
+                            <small class="text-light-emphasis">@injury.Player?.Team?.Name</small>
+                        </div>
+                        <span class="badge text-bg-danger">Injured</span>
+                    </div>
+
+                    <p class="mb-2">@injury.Description</p>
+
+                    <div class="mb-3">
+                        <span class="badge text-bg-warning">Recovery: @injury.RecoveryDays days</span>
+                    </div>
+
+                    <button class="btn btn-sm btn-success" @onclick="() => MarkRecoveredAsync(injury.Id)">Mark Recovered</button>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+</div>
+
+@code {
+    private List<Injury> injuries = new();
+    private string statusMessage = string.Empty;
+    private string statusCssClass = "alert-success";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadInjuriesAsync();
+    }
+
+    private async Task MarkRecoveredAsync(int id)
+    {
+        try
+        {
+            await InjuryService.MarkRecoveredAsync(id);
+            statusMessage = "Player marked as recovered.";
+            statusCssClass = "alert-success";
+            await LoadInjuriesAsync();
+        }
+        catch (Exception ex)
+        {
+            statusMessage = ex.Message;
+            statusCssClass = "alert-danger";
+        }
+    }
+
+    private async Task LoadInjuriesAsync()
+    {
+        injuries = await InjuryService.GetActiveInjuriesAsync();
+    }
+}
+

@@ -1,0 +1,161 @@
+@page "/dashboard"
+@inject TeamService TeamService
+@inject PlayerService PlayerService
+@inject MatchService MatchService
+@inject AvatarService AvatarService
+
+<PageTitle>Dashboard</PageTitle>
+
+<div class="game-page">
+    <div class="hero-panel mb-4">
+        <div>
+            <h1 class="mb-2">Sport Manager</h1>
+            <p class="text-light-emphasis mb-0">Build squads, simulate fixtures, and track your season.</p>
+        </div>
+        <div class="d-flex gap-2 flex-wrap mt-3 mt-md-0">
+            <a href="teams" class="btn btn-warning">Manage Team</a>
+            <a href="players" class="btn btn-outline-light">View Players</a>
+            <a href="matches" class="btn btn-success">Simulate Match</a>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card sport-card h-100">
+                <div class="card-body">
+                    <h6 class="card-title text-uppercase text-light-emphasis">Teams</h6>
+                    <p class="display-6 mb-0">@teamCount</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card sport-card h-100">
+                <div class="card-body">
+                    <h6 class="card-title text-uppercase text-light-emphasis">Players</h6>
+                    <p class="display-6 mb-0">@playerCount</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card sport-card h-100 border-danger">
+                <div class="card-body">
+                    <h6 class="card-title text-uppercase text-light-emphasis">Injured Players</h6>
+                    <p class="display-6 mb-0 text-danger">@injuredPlayerCount</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card sport-card h-100">
+                <div class="card-body">
+                    <h6 class="card-title text-uppercase text-light-emphasis">Played Matches</h6>
+                    <p class="display-6 mb-0">@playedMatchCount</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-6">
+            <div class="card sport-card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Top 5 Players</h5>
+
+                    @if (topPlayers.Count == 0)
+                    {
+                        <p class="text-muted mb-0">No players yet.</p>
+                    }
+                    else
+                    {
+                        <div class="d-flex flex-column gap-2">
+                            @foreach (var player in topPlayers)
+                            {
+                                <div class="p-2 rounded border border-secondary-subtle d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <img src="@AvatarService.GetAvatarUrl(player)" alt="Avatar" width="34" height="34" class="rounded border" />
+                                        <div>
+                                            <div class="fw-semibold">@player.FirstName @player.LastName</div>
+                                            <small class="text-light-emphasis">@player.Team?.Name - @player.Position?.Name</small>
+                                        </div>
+                                    </div>
+                                    <span class="badge text-bg-warning">@player.OverallRating</span>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card sport-card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">Recent Matches</h5>
+
+                    @if (lastMatches.Count == 0)
+                    {
+                        <p class="text-muted mb-0">No matches yet.</p>
+                    }
+                    else
+                    {
+                        <div class="d-flex flex-column gap-2">
+                            @foreach (var match in lastMatches)
+                            {
+                                <div class="fixture-card p-3">
+                                    <div class="small text-light-emphasis mb-1">@match.MatchDate.ToShortDateString()</div>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <strong class="text-truncate pe-2">@match.HomeTeam?.Name</strong>
+                                        <div class="fixture-score">
+                                            @if (match.IsPlayed)
+                                            {
+                                                <span>@match.HomeScore - @match.AwayScore</span>
+                                            }
+                                            else
+                                            {
+                                                <span>VS</span>
+                                            }
+                                        </div>
+                                        <strong class="text-truncate ps-2 text-end">@match.AwayTeam?.Name</strong>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private int teamCount;
+    private int playerCount;
+    private int injuredPlayerCount;
+    private int playedMatchCount;
+
+    private List<Player> topPlayers = new();
+    private List<Match> lastMatches = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        var teams = await TeamService.GetAllAsync();
+        var players = await PlayerService.GetAllAsync();
+        var matches = await MatchService.GetAllAsync();
+
+        teamCount = teams.Count;
+        playerCount = players.Count;
+        injuredPlayerCount = players.Count(p => p.IsInjured);
+        playedMatchCount = matches.Count(m => m.IsPlayed);
+
+        topPlayers = players
+            .OrderByDescending(p => p.OverallRating)
+            .ThenBy(p => p.LastName)
+            .Take(5)
+            .ToList();
+
+        lastMatches = matches
+            .OrderByDescending(m => m.MatchDate)
+            .Take(3)
+            .ToList();
+    }
+}
+

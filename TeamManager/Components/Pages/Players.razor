@@ -1,0 +1,307 @@
+@page "/players"
+@rendermode InteractiveServer
+@inject PlayerService PlayerService
+@inject TeamService TeamService
+@inject PositionService PositionService
+@inject AvatarService AvatarService
+@inject IJSRuntime JS
+
+<PageTitle>Players</PageTitle>
+
+<div class="game-page">
+<h1>Players</h1>
+
+@if (!string.IsNullOrWhiteSpace(statusMessage))
+{
+    <div class="alert @statusCssClass" role="alert">@statusMessage</div>
+}
+
+<div class="card mb-4">
+    <div class="card-body">
+        <h5 class="card-title">@(isEditMode ? "Edit Player" : "Add Player")</h5>
+        <EditForm Model="formPlayer" OnValidSubmit="SavePlayerAsync">
+            <DataAnnotationsValidator />
+            <ValidationSummary />
+
+            <div class="row g-3">
+                <div class="col-md-2 d-flex align-items-end">
+                    <img src="@AvatarService.GetAvatarUrl(formPlayer)"
+                         alt="Player avatar"
+                         width="72"
+                         height="72"
+                         class="rounded border" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">First Name</label>
+                    <InputText class="form-control" @bind-Value="formPlayer.FirstName" />
+                    <ValidationMessage For="() => formPlayer.FirstName" />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Last Name</label>
+                    <InputText class="form-control" @bind-Value="formPlayer.LastName" />
+                    <ValidationMessage For="() => formPlayer.LastName" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Age</label>
+                    <InputNumber class="form-control" @bind-Value="formPlayer.Age" />
+                    <ValidationMessage For="() => formPlayer.Age" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Number</label>
+                    <InputNumber class="form-control" @bind-Value="formPlayer.Number" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Team</label>
+                    <InputSelect class="form-select" @bind-Value="formPlayer.TeamId">
+                        <option value="0">Choose team</option>
+                        @foreach (var team in teams)
+                        {
+                            <option value="@team.Id">@team.Name</option>
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="() => formPlayer.TeamId" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Position</label>
+                    <InputSelect class="form-select" @bind-Value="formPlayer.PositionId">
+                        <option value="0">Choose position</option>
+                        @foreach (var position in positions)
+                        {
+                            <option value="@position.Id">@position.Name</option>
+                        }
+                    </InputSelect>
+                    <ValidationMessage For="() => formPlayer.PositionId" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Speed</label>
+                    <InputNumber class="form-control" @bind-Value="formPlayer.Speed" />
+                    <ValidationMessage For="() => formPlayer.Speed" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Endurance</label>
+                    <InputNumber class="form-control" @bind-Value="formPlayer.Endurance" />
+                    <ValidationMessage For="() => formPlayer.Endurance" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Strength</label>
+                    <InputNumber class="form-control" @bind-Value="formPlayer.Strength" />
+                    <ValidationMessage For="() => formPlayer.Strength" />
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Technique</label>
+                    <InputNumber class="form-control" @bind-Value="formPlayer.Technique" />
+                    <ValidationMessage For="() => formPlayer.Technique" />
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <div class="form-check">
+                        <InputCheckbox class="form-check-input" @bind-Value="formPlayer.IsInjured" />
+                        <label class="form-check-label">Is injured</label>
+                    </div>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <span class="badge text-bg-secondary fs-6">Overall: @CalculateOverallRating(formPlayer)</span>
+                </div>
+            </div>
+
+            <div class="mt-3 d-flex gap-2">
+                <button type="submit" class="btn btn-primary">@(isEditMode ? "Update Player" : "Add Player")</button>
+                @if (isEditMode)
+                {
+                    <button type="button" class="btn btn-outline-secondary" @onclick="CancelEdit">Cancel</button>
+                }
+            </div>
+        </EditForm>
+    </div>
+</div>
+
+<div class="row g-3">
+    @if (players.Count == 0)
+    {
+        <div class="col-12">
+            <div class="alert alert-secondary mb-0">No players yet.</div>
+        </div>
+    }
+
+    @foreach (var player in players)
+    {
+        <div class="col-md-6 col-xl-4">
+            <div class="card sport-card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <img src="@AvatarService.GetAvatarUrl(player)"
+                                 alt="@($"Avatar of {player.FirstName} {player.LastName}")"
+                                 width="52"
+                                 height="52"
+                                 class="rounded border" />
+                            <div>
+                                <h6 class="mb-0">@player.FirstName @player.LastName</h6>
+                                <small class="text-light-emphasis">@player.Team?.Name - @player.Position?.Name</small>
+                            </div>
+                        </div>
+                        <span class="badge text-bg-warning">OVR @player.OverallRating</span>
+                    </div>
+
+                    <div class="mb-2">
+                        @if (player.IsInjured)
+                        {
+                            <span class="badge text-bg-danger">Injured</span>
+                        }
+                        else
+                        {
+                            <span class="badge text-bg-success">Fit</span>
+                        }
+                    </div>
+
+                    <div class="small mb-1">Speed @player.Speed</div>
+                    <div class="progress mb-2" role="progressbar" aria-label="Speed"><div class="progress-bar bg-info" style="width:@($"{player.Speed}%")"></div></div>
+
+                    <div class="small mb-1">Endurance @player.Endurance</div>
+                    <div class="progress mb-2" role="progressbar" aria-label="Endurance"><div class="progress-bar bg-success" style="width:@($"{player.Endurance}%")"></div></div>
+
+                    <div class="small mb-1">Strength @player.Strength</div>
+                    <div class="progress mb-2" role="progressbar" aria-label="Strength"><div class="progress-bar bg-warning" style="width:@($"{player.Strength}%")"></div></div>
+
+                    <div class="small mb-1">Technique @player.Technique</div>
+                    <div class="progress mb-3" role="progressbar" aria-label="Technique"><div class="progress-bar bg-primary" style="width:@($"{player.Technique}%")"></div></div>
+
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-primary" @onclick="() => StartEdit(player)">Manage Player</button>
+                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeletePlayerAsync(player.Id)">Delete</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+</div>
+
+@code {
+    private Player formPlayer = CreateEmptyPlayer();
+    private bool isEditMode;
+    private List<Player> players = new();
+    private List<Team> teams = new();
+    private List<Position> positions = new();
+    private string statusMessage = string.Empty;
+    private string statusCssClass = "alert-success";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadLookupsAsync();
+        await LoadPlayersAsync();
+    }
+
+    private async Task SavePlayerAsync()
+    {
+        formPlayer.FullName = $"{formPlayer.FirstName} {formPlayer.LastName}";
+
+        try
+        {
+            if (isEditMode)
+            {
+                await PlayerService.UpdateAsync(formPlayer);
+                ShowSuccess("Player updated successfully.");
+            }
+            else
+            {
+                await PlayerService.AddAsync(formPlayer);
+                ShowSuccess("Player created successfully.");
+            }
+
+            CancelEdit();
+            await LoadPlayersAsync();
+        }
+        catch (Exception ex)
+        {
+            ShowError(ex.Message);
+        }
+    }
+
+    private void StartEdit(Player player)
+    {
+        isEditMode = true;
+        formPlayer = new Player
+        {
+            Id = player.Id,
+            FirstName = player.FirstName,
+            LastName = player.LastName,
+            FullName = player.FullName,
+            Age = player.Age,
+            Number = player.Number,
+            TeamId = player.TeamId,
+            PositionId = player.PositionId,
+            Speed = player.Speed,
+            Endurance = player.Endurance,
+            Strength = player.Strength,
+            Technique = player.Technique,
+            IsInjured = player.IsInjured
+        };
+    }
+
+    private void CancelEdit()
+    {
+        isEditMode = false;
+        formPlayer = CreateEmptyPlayer();
+    }
+
+    private async Task DeletePlayerAsync(int id)
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", "Delete this player?");
+        if (!confirmed)
+        {
+            return;
+        }
+
+        try
+        {
+            await PlayerService.DeleteAsync(id);
+            ShowSuccess("Player deleted successfully.");
+            await LoadPlayersAsync();
+        }
+        catch (Exception ex)
+        {
+            ShowError(ex.Message);
+        }
+    }
+
+    private async Task LoadLookupsAsync()
+    {
+        teams = await TeamService.GetAllAsync();
+        positions = await PositionService.GetAllAsync();
+    }
+
+    private async Task LoadPlayersAsync()
+    {
+        players = await PlayerService.GetAllAsync();
+    }
+
+    private void ShowSuccess(string message)
+    {
+        statusMessage = message;
+        statusCssClass = "alert-success";
+    }
+
+    private void ShowError(string message)
+    {
+        statusMessage = message;
+        statusCssClass = "alert-danger";
+    }
+
+    private static decimal CalculateOverallRating(Player player)
+    {
+        return Math.Round((player.Speed + player.Endurance + player.Strength + player.Technique) / 4m, 1);
+    }
+
+    private static Player CreateEmptyPlayer()
+    {
+        return new Player
+        {
+            Age = 18,
+            Speed = 50,
+            Endurance = 50,
+            Strength = 50,
+            Technique = 50
+        };
+    }
+}
+
