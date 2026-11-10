@@ -75,5 +75,13 @@ public class TeamService(SportManagerDbContext dbContext)
             throw new InvalidOperationException("Could not update team. Please try again.");
         }
     }
+        public async Task<Team?> GetByIdWithPlayersAsync(int id)
+    {
+        return await dbContext.Teams
+            .AsNoTracking()
+            .Include(t => t.Players)
+                .ThenInclude(p => p.Position)
+            .FirstOrDefaultAsync(t => t.Id == id);
+    }
 }
 

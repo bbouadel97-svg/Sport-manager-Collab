@@ -10,7 +10,7 @@ builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
 builder.Services.AddDbContext<SportManagerDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("SportManager") ?? "Data Source=sportmanager.db"));
+    options.UseMySQL(builder.Configuration.GetConnectionString("SportManager")!));
 
 builder.Services.AddScoped<TeamService>();
 builder.Services.AddScoped<PlayerService>();
@@ -19,6 +19,7 @@ builder.Services.AddScoped<PositionService>();
 builder.Services.AddScoped<MatchService>();
 builder.Services.AddScoped<MatchSimulationService>();
 builder.Services.AddScoped<InjuryService>();
+builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
 
@@ -36,6 +37,9 @@ app.UseHttpsRedirection();
 app.UseAntiforgery();
 
 app.MapStaticAssets();
+app.MapControllerRoute(
+    name: "mvc",
+    pattern: "mvc/{controller=Teams}/{action=Index}/{id?}");
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 

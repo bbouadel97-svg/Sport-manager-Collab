@@ -1,0 +1,48 @@
+@model TeamManager.Models.Team
+@{
+    ViewData["Title"] = Model.Name;
+}
+
+<a asp-action="Index" class="btn btn-sm btn-outline-secondary mb-3">← Retour aux équipes</a>
+
+<h1>@Model.Name</h1>
+<dl class="row">
+    <dt class="col-sm-2">Ville</dt>
+    <dd class="col-sm-10">@Model.City</dd>
+    <dt class="col-sm-2">Entraîneur</dt>
+    <dd class="col-sm-10">@Model.CoachName</dd>
+    <dt class="col-sm-2">Joueurs</dt>
+    <dd class="col-sm-10">@Model.Players.Count</dd>
+</dl>
+
+<h2>Effectif</h2>
+@if (Model.Players.Count == 0)
+{
+    <p>Aucun joueur dans cette équipe.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>N°</th>
+                <th>Nom</th>
+                <th>Poste</th>
+                <th>Note</th>
+                <th>Blessé</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var p in Model.Players.OrderBy(p => p.Number))
+            {
+                <tr>
+                    <td>@p.Number</td>
+                    <td><a asp-controller="Players" asp-action="Details" asp-route-id="@p.Id">@p.FirstName @p.LastName</a></td>
+                    <td>@p.Position?.Name</td>
+                    <td>@p.OverallRating</td>
+                    <td>@(p.IsInjured ? "Oui" : "Non")</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

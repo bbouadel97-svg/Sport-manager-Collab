@@ -1,0 +1,57 @@
+@model TeamManager.Models.Player
+@{
+    ViewData["Title"] = Model.FirstName + " " + Model.LastName;
+}
+
+<a asp-action="Index" class="btn btn-sm btn-outline-secondary mb-3">← Retour aux joueurs</a>
+
+<h1>@Model.FirstName @Model.LastName</h1>
+
+<dl class="row">
+    <dt class="col-sm-3">Âge</dt>
+    <dd class="col-sm-9">@Model.Age ans</dd>
+    <dt class="col-sm-3">Numéro</dt>
+    <dd class="col-sm-9">@Model.Number</dd>
+    <dt class="col-sm-3">Poste</dt>
+    <dd class="col-sm-9">@Model.Position?.Name</dd>
+    <dt class="col-sm-3">Équipe</dt>
+    <dd class="col-sm-9">
+        @if (Model.Team is not null)
+        {
+            <a asp-controller="Teams" asp-action="Details" asp-route-id="@Model.TeamId">@Model.Team.Name</a>
+        }
+    </dd>
+    <dt class="col-sm-3">État</dt>
+    <dd class="col-sm-9">
+        @if (Model.IsInjured)
+        {
+            <span class="badge bg-danger">Blessé</span>
+        }
+        else
+        {
+            <span class="badge bg-success">Apte</span>
+        }
+    </dd>
+</dl>
+
+<h2>Caractéristiques</h2>
+<p>Note globale : <strong>@Model.OverallRating</strong> / 100</p>
+
+@foreach (var (label, value) in new[]
+{
+    ("Vitesse", Model.Speed),
+    ("Endurance", Model.Endurance),
+    ("Force", Model.Strength),
+    ("Technique", Model.Technique)
+})
+{
+    <div class="mb-2">
+        <div class="d-flex justify-content-between">
+            <span>@label</span>
+            <span>@value</span>
+        </div>
+        <div class="progress">
+            <div class="progress-bar" style="width: @value%"></div>
+        </div>
+    </div>
+}

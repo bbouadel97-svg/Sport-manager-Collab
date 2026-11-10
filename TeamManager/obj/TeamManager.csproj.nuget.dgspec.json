@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\Users\\User\\OneDrive\\Bureau\\TeamManager\\TeamManager\\TeamManager.csproj": {}
+    "C:\\Users\\User\\Sport-manager-Collab\\TeamManager\\TeamManager.csproj": {}
   },
   "projects": {
-    "C:\\Users\\User\\OneDrive\\Bureau\\TeamManager\\TeamManager\\TeamManager.csproj": {
+    "C:\\Users\\User\\Sport-manager-Collab\\TeamManager\\TeamManager.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\Users\\User\\OneDrive\\Bureau\\TeamManager\\TeamManager\\TeamManager.csproj",
+        "projectUniqueName": "C:\\Users\\User\\Sport-manager-Collab\\TeamManager\\TeamManager.csproj",
         "projectName": "TeamManager",
-        "projectPath": "C:\\Users\\User\\OneDrive\\Bureau\\TeamManager\\TeamManager\\TeamManager.csproj",
+        "projectPath": "C:\\Users\\User\\Sport-manager-Collab\\TeamManager\\TeamManager.csproj",
         "packagesPath": "C:\\Users\\User\\.nuget\\packages\\",
-        "outputPath": "C:\\Users\\User\\OneDrive\\Bureau\\TeamManager\\TeamManager\\obj\\",
+        "outputPath": "C:\\Users\\User\\Sport-manager-Collab\\TeamManager\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\User\\AppData\\Roaming\\NuGet\\NuGet.Config"
@@ -51,13 +51,9 @@
               "version": "[10.0.5, )",
               "autoReferenced": true
             },
-            "Microsoft.EntityFrameworkCore": {
+            "MySql.EntityFrameworkCore": {
               "target": "Package",
-              "version": "[10.0.0, )"
-            },
-            "Microsoft.EntityFrameworkCore.Sqlite": {
-              "target": "Package",
-              "version": "[10.0.0, )"
+              "version": "[10.0.12, )"
             }
           },
           "imports": [

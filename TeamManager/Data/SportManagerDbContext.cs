@@ -11,14 +11,6 @@ public class SportManagerDbContext(DbContextOptions<SportManagerDbContext> optio
     public DbSet<Match> Matches => Set<Match>();
     public DbSet<Injury> Injuries => Set<Injury>();
 
-    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-    {
-        if (!optionsBuilder.IsConfigured)
-        {
-            optionsBuilder.UseSqlite("Data Source=sportmanager.db");
-        }
-    }
-
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Player>()

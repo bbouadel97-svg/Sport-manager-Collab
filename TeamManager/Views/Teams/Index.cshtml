@@ -1,0 +1,38 @@
+@{
+    ViewData["Title"] = "Équipes";
+}
+
+@model List<TeamManager.Models.Team>
+
+<h1>Équipes — test MVC</h1>
+
+@if (Model.Count == 0)
+{
+    <p>Aucune équipe pour le moment.</p>
+}
+else
+{
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Nom</th>
+                <th>Ville</th>
+                <th>Entraîneur</th>
+                <th>Joueurs</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var team in Model)
+            {
+                <tr>
+                    <td>@team.Name</td>
+                    <td>@team.City</td>
+                    <td>@team.CoachName</td>
+                    <td>@team.PlayerCount</td>
+                    <td><a asp-action="Details" asp-route-id="@team.Id">Voir le détail</a></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
