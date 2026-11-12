@@ -21,7 +21,9 @@ public class PlayerService(SportManagerDbContext dbContext)
     {
         return await dbContext.Players
             .AsNoTracking()
-            .FirstOrDefaultAsync(p => p.Id == id);
+            .Include(player => player.Team)
+            .Include(player => player.Position)
+            .FirstOrDefaultAsync(player => player.Id == id);
     }
 
     public async Task AddAsync(Player player)

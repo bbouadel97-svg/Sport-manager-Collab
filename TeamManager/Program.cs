@@ -31,7 +31,12 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
+app.UseWhen(
+    context => !context.Request.Path.StartsWithSegments("/api"),
+    branch => branch.UseStatusCodePagesWithReExecute(
+        "/not-found",
+        createScopeForStatusCodePages: true));
+
 app.UseHttpsRedirection();
 
 app.UseAntiforgery();
@@ -40,6 +45,7 @@ app.MapStaticAssets();
 app.MapControllerRoute(
     name: "mvc",
     pattern: "mvc/{controller=Teams}/{action=Index}/{id?}");
+app.MapControllers();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
