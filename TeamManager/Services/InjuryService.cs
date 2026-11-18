@@ -4,14 +4,16 @@ using TeamManager.Models;
 
 namespace TeamManager.Services;
 
-public class InjuryService(SportManagerDbContext dbContext)
+public class InjuryService(SportManagerDbContext dbContext, CurrentUserService currentUser)
 {
     private readonly Random _random = new();
 
     public async Task<List<Injury>> GetAllAsync()
     {
+        var userId = await currentUser.GetRequiredUserIdAsync();
         return await dbContext.Injuries
             .AsNoTracking()
+            .Where(injury => injury.UserId == null || injury.UserId == userId)
             .Include(i => i.Player)
             .ThenInclude(p => p!.Team)
             .OrderByDescending(i => i.InjuryDate)
@@ -20,24 +22,34 @@ public class InjuryService(SportManagerDbContext dbContext)
 
     public async Task<List<Injury>> GetActiveInjuriesAsync()
     {
+        var userId = await currentUser.GetRequiredUserIdAsync();
         return await dbContext.Injuries
             .AsNoTracking()
+            .Where(injury => (injury.UserId == null || injury.UserId == userId) && !injury.IsRecovered)
             .Include(i => i.Player)
             .ThenInclude(p => p!.Team)
-            .Where(i => !i.IsRecovered)
             .OrderByDescending(i => i.InjuryDate)
             .ToListAsync();
     }
 
     public async Task AddAsync(Injury injury)
     {
+        var userId = await currentUser.GetRequiredUserIdAsync();
+        if (!await dbContext.Players.AnyAsync(player => player.Id == injury.PlayerId && player.UserId == userId))
+        {
+            throw new InvalidOperationException("The player is not owned by the current user.");
+        }
+
+        injury.UserId = userId;
         dbContext.Injuries.Add(injury);
         await dbContext.SaveChangesAsync();
     }
 
     public async Task DeleteAsync(int id)
     {
-        var injury = await dbContext.Injuries.FindAsync(id);
+        var userId = await currentUser.GetRequiredUserIdAsync();
+        var injury = await dbContext.Injuries.FirstOrDefaultAsync(candidate =>
+            candidate.Id == id && candidate.UserId == userId);
         if (injury is null)
         {
             return;
@@ -49,13 +61,14 @@ public class InjuryService(SportManagerDbContext dbContext)
 
     public async Task MarkRecoveredAsync(int injuryId)
     {
+        var userId = await currentUser.GetRequiredUserIdAsync();
         var injury = await dbContext.Injuries
             .Include(i => i.Player)
-            .FirstOrDefaultAsync(i => i.Id == injuryId);
+            .FirstOrDefaultAsync(i => i.Id == injuryId && i.UserId == userId);
 
         if (injury is null)
         {
-            throw new InvalidOperationException("Injury record not found.");
+            throw new InvalidOperationException("Injury record not found or cannot be modified.");
         }
 
         injury.IsRecovered = true;
@@ -75,7 +88,7 @@ public class InjuryService(SportManagerDbContext dbContext)
         }
     }
 
-    public void CreateMatchInjuries(IEnumerable<Player> playersWhoPlayed)
+    public void CreateMatchInjuries(IEnumerable<Player> playersWhoPlayed, int userId)
     {
         foreach (var player in playersWhoPlayed)
         {
@@ -94,6 +107,7 @@ public class InjuryService(SportManagerDbContext dbContext)
 
             dbContext.Injuries.Add(new Injury
             {
+                UserId = userId,
                 PlayerId = player.Id,
                 Description = BuildInjuryDescription(player),
                 InjuryDate = DateTime.Today,

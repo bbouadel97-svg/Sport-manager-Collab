@@ -1,4 +1,5 @@
 using TeamManager.Models;
+using System.ComponentModel.DataAnnotations;
 
 namespace TeamManager.DTOs;
 
@@ -33,6 +34,18 @@ public sealed record PlayerDto(
     int Technique,
     decimal OverallRating,
     bool IsInjured);
+
+public sealed class CreateTeamRequest
+{
+    [Required, StringLength(100)]
+    public string Name { get; init; } = string.Empty;
+
+    [Required, StringLength(100)]
+    public string City { get; init; } = string.Empty;
+
+    [StringLength(100)]
+    public string CoachName { get; init; } = string.Empty;
+}
 
 public static class ApiDtoMapper
 {

@@ -264,3 +264,11 @@ C:\Users\User\.copilot\session-state\323e0b81-e700-4816-9cb1-f6b4c453c1af\files\
 C:\Users\User\.copilot\session-state\323e0b81-e700-4816-9cb1-f6b4c453c1af\files\api-build-check\TeamManager.runtimeconfig.json
 C:\Users\User\.copilot\session-state\323e0b81-e700-4816-9cb1-f6b4c453c1af\files\api-build-check\TeamManager.dll
 C:\Users\User\.copilot\session-state\323e0b81-e700-4816-9cb1-f6b4c453c1af\files\api-build-check\TeamManager.pdb
+C:\Users\User\Sport-manager-Collab\TeamManager\bin\Debug\net10.0\Microsoft.AspNetCore.Authentication.JwtBearer.dll
+C:\Users\User\Sport-manager-Collab\TeamManager\bin\Debug\net10.0\Microsoft.IdentityModel.Abstractions.dll
+C:\Users\User\Sport-manager-Collab\TeamManager\bin\Debug\net10.0\Microsoft.IdentityModel.JsonWebTokens.dll
+C:\Users\User\Sport-manager-Collab\TeamManager\bin\Debug\net10.0\Microsoft.IdentityModel.Logging.dll
+C:\Users\User\Sport-manager-Collab\TeamManager\bin\Debug\net10.0\Microsoft.IdentityModel.Protocols.dll
+C:\Users\User\Sport-manager-Collab\TeamManager\bin\Debug\net10.0\Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
+C:\Users\User\Sport-manager-Collab\TeamManager\bin\Debug\net10.0\Microsoft.IdentityModel.Tokens.dll
+C:\Users\User\Sport-manager-Collab\TeamManager\bin\Debug\net10.0\System.IdentityModel.Tokens.Jwt.dll

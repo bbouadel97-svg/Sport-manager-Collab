@@ -105,10 +105,17 @@
                     <div class="fw-semibold text-truncate ps-2 text-end">@match.AwayTeam?.Name</div>
                 </div>
 
-                <div class="d-flex gap-2">
-                    <button class="btn btn-sm btn-success" @onclick="() => SimulateMatchAsync(match.Id)" disabled="@match.IsPlayed">Simulate Match</button>
-                    <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteMatchAsync(match.Id)">Delete</button>
-                </div>
+                @if (match.UserId.HasValue)
+                {
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-success" @onclick="() => SimulateMatchAsync(match.Id)" disabled="@match.IsPlayed">Simulate Match</button>
+                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteMatchAsync(match.Id)">Delete</button>
+                    </div>
+                }
+                else
+                {
+                    <span class="badge text-bg-secondary">Shared demo · read-only</span>
+                }
             </div>
         </div>
     }
@@ -216,7 +223,7 @@
 
     private async Task LoadTeamsAsync()
     {
-        teams = await TeamService.GetAllAsync();
+        teams = await TeamService.GetOwnedAsync();
         hasEnoughTeams = teams.Count >= 2;
     }
 

@@ -51,6 +51,10 @@
               "version": "[10.0.5, )",
               "autoReferenced": true
             },
+            "Microsoft.AspNetCore.Authentication.JwtBearer": {
+              "target": "Package",
+              "version": "[10.0.5, )"
+            },
             "MySql.EntityFrameworkCore": {
               "target": "Package",
               "version": "[10.0.12, )"

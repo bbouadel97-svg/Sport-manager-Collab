@@ -5,6 +5,7 @@ namespace TeamManager.Models;
 public class Match
 {
     public int Id { get; set; }
+    public int? UserId { get; set; }
 
     [Required]
     [Range(1, int.MaxValue, ErrorMessage = "Home team is required.")]

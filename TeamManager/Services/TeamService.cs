@@ -4,28 +4,49 @@ using TeamManager.Models;
 
 namespace TeamManager.Services;
 
-public class TeamService(SportManagerDbContext dbContext)
+public class TeamService(SportManagerDbContext dbContext, CurrentUserService currentUser)
 {
     public async Task<List<Team>> GetAllAsync()
     {
+        var userId = await currentUser.GetRequiredUserIdAsync();
         return await dbContext.Teams
             .AsNoTracking()
+            .Where(team => team.UserId == null || team.UserId == userId)
             .Select(t => new Team
             {
                 Id = t.Id,
+                UserId = t.UserId,
                 Name = t.Name,
                 City = t.City,
                 CoachName = t.CoachName,
-                PlayerCount = t.Players.Count
+                PlayerCount = t.Players.Count(player => player.UserId == null || player.UserId == userId)
             })
             .OrderBy(t => t.Name)
             .ToListAsync();
+    }
+
+    public async Task<List<Team>> GetOwnedAsync()
+    {
+        var userId = await currentUser.GetRequiredUserIdAsync();
+        return await dbContext.Teams
+            .AsNoTracking()
+            .Where(team => team.UserId == userId)
+            .OrderBy(team => team.Name)
+            .ToListAsync();
+    }
+
+    public async Task<Team?> GetOwnedByIdAsync(int id)
+    {
+        var userId = await currentUser.GetRequiredUserIdAsync();
+        return await dbContext.Teams.FirstOrDefaultAsync(team =>
+            team.Id == id && team.UserId == userId);
     }
 
     public async Task AddAsync(Team team)
     {
         try
         {
+            team.UserId = await currentUser.GetRequiredUserIdAsync();
             dbContext.Teams.Add(team);
             await dbContext.SaveChangesAsync();
         }
@@ -37,10 +58,12 @@ public class TeamService(SportManagerDbContext dbContext)
 
     public async Task DeleteAsync(int id)
     {
-        var team = await dbContext.Teams.FindAsync(id);
+        var userId = await currentUser.GetRequiredUserIdAsync();
+        var team = await dbContext.Teams.FirstOrDefaultAsync(candidate =>
+            candidate.Id == id && candidate.UserId == userId);
         if (team is null)
         {
-            throw new InvalidOperationException("Team not found.");
+            throw new InvalidOperationException("Team not found or cannot be modified.");
         }
 
         try
@@ -56,10 +79,12 @@ public class TeamService(SportManagerDbContext dbContext)
 
     public async Task UpdateAsync(Team updatedTeam)
     {
-        var team = await dbContext.Teams.FindAsync(updatedTeam.Id);
+        var userId = await currentUser.GetRequiredUserIdAsync();
+        var team = await dbContext.Teams.FirstOrDefaultAsync(candidate =>
+            candidate.Id == updatedTeam.Id && candidate.UserId == userId);
         if (team is null)
         {
-            throw new InvalidOperationException("Team not found.");
+            throw new InvalidOperationException("Team not found or cannot be modified.");
         }
 
         team.Name = updatedTeam.Name;
@@ -77,11 +102,13 @@ public class TeamService(SportManagerDbContext dbContext)
     }
         public async Task<Team?> GetByIdWithPlayersAsync(int id)
     {
+            var userId = await currentUser.GetRequiredUserIdAsync();
         return await dbContext.Teams
             .AsNoTracking()
-            .Include(t => t.Players)
+                .Where(team => team.Id == id && (team.UserId == null || team.UserId == userId))
+                .Include(t => t.Players.Where(player => player.UserId == null || player.UserId == userId))
                 .ThenInclude(p => p.Position)
-            .FirstOrDefaultAsync(t => t.Id == id);
+                .FirstOrDefaultAsync();
     }
 }
 

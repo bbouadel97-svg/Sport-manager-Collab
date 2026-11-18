@@ -1,6 +1,8 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
 void main() {
@@ -11,25 +13,116 @@ class ApiService {
   ApiService._();
 
   static final ApiService instance = ApiService._();
+  static const FlutterSecureStorage _storage = FlutterSecureStorage();
+  static const String _tokenKey = 'sport_manager_jwt';
+  VoidCallback? onSessionExpired;
 
-  static const String _baseUrl = String.fromEnvironment(
-    'API_BASE_URL',
-    defaultValue: 'http://10.0.2.2:5084',
-  );
+  static const String _configuredBaseUrl = String.fromEnvironment('API_BASE_URL');
+
+  static String get _baseUrl {
+    if (_configuredBaseUrl.isNotEmpty) return _configuredBaseUrl;
+    if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+      return 'http://10.0.2.2:5084';
+    }
+    return 'http://localhost:5084';
+  }
+
+  Future<bool> hasToken() async => (await _storage.read(key: _tokenKey)) != null;
+
+  Future<void> register({
+    required String name,
+    required String email,
+    required String password,
+  }) async {
+    final response = await http
+        .post(
+          Uri.parse('$_baseUrl/api/auth/register'),
+          headers: const {'Accept': 'application/json', 'Content-Type': 'application/json'},
+          body: jsonEncode({'name': name, 'email': email, 'password': password}),
+        )
+        .timeout(const Duration(seconds: 10));
+
+    if (response.statusCode != 201) {
+      throw Exception(_errorMessage(response, 'Inscription impossible.'));
+    }
+  }
+
+  Future<void> login({
+    required String email,
+    required String password,
+  }) async {
+    final response = await http
+        .post(
+          Uri.parse('$_baseUrl/api/auth/login'),
+          headers: const {'Accept': 'application/json', 'Content-Type': 'application/json'},
+          body: jsonEncode({'email': email, 'password': password}),
+        )
+        .timeout(const Duration(seconds: 10));
+
+    if (response.statusCode != 200) {
+      throw Exception(_errorMessage(response, 'Connexion impossible.'));
+    }
+
+    final data = _asMap(jsonDecode(response.body));
+    final token = data['token'];
+    if (token is! String || token.isEmpty) {
+      throw const FormatException('Le serveur n’a pas renvoyé de jeton.');
+    }
+    await _storage.write(key: _tokenKey, value: token);
+  }
+
+  Future<void> logout() async {
+    final token = await _storage.read(key: _tokenKey);
+    try {
+      if (token != null) {
+        final response = await http
+            .post(
+              Uri.parse('$_baseUrl/api/auth/logout'),
+              headers: {'Accept': 'application/json', 'Authorization': 'Bearer $token'},
+            )
+            .timeout(const Duration(seconds: 10));
+
+        if (response.statusCode != 204 && response.statusCode != 401) {
+          throw Exception(_errorMessage(response, 'La révocation du jeton a échoué.'));
+        }
+      }
+    } finally {
+      await _storage.delete(key: _tokenKey);
+    }
+  }
 
   Future<dynamic> _getJson(String path) async {
+    final token = await _storage.read(key: _tokenKey);
     final response = await http
         .get(
           Uri.parse('$_baseUrl$path'),
-          headers: const {'Accept': 'application/json'},
+          headers: {
+            'Accept': 'application/json',
+            if (token != null) 'Authorization': 'Bearer $token',
+          },
         )
         .timeout(const Duration(seconds: 10));
+
+    if (response.statusCode == 401) {
+      await _storage.delete(key: _tokenKey);
+      onSessionExpired?.call();
+    }
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw Exception('Erreur HTTP ${response.statusCode} sur $path');
     }
 
     return jsonDecode(response.body);
+  }
+
+  String _errorMessage(http.Response response, String fallback) {
+    try {
+      final data = _asMap(jsonDecode(response.body));
+      final message = data['message'];
+      return message is String ? message : fallback;
+    } on FormatException {
+      return fallback;
+    }
   }
 
   Map<String, dynamic> _asMap(dynamic value) {
@@ -204,13 +297,231 @@ class SportManagerApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.green),
         useMaterial3: true,
       ),
-      home: const HomePage(),
+      home: const AuthGate(),
+    );
+  }
+}
+
+class AuthGate extends StatefulWidget {
+  const AuthGate({super.key});
+
+  @override
+  State<AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<AuthGate> {
+  bool? _authenticated;
+  String? _restoreError;
+
+  @override
+  void initState() {
+    super.initState();
+    ApiService.instance.onSessionExpired = _expireSession;
+    _restoreSession();
+  }
+
+  Future<void> _restoreSession() async {
+    try {
+      final hasToken = await ApiService.instance.hasToken();
+      if (mounted) {
+        setState(() {
+          _authenticated = hasToken;
+          _restoreError = null;
+        });
+      }
+    } catch (error) {
+      if (mounted) {
+        setState(() => _restoreError = error.toString());
+      }
+    }
+  }
+
+  void _expireSession() {
+    if (mounted) {
+      setState(() => _authenticated = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    ApiService.instance.onSessionExpired = null;
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_restoreError != null) {
+      return Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Impossible de restaurer la session : $_restoreError'),
+                const SizedBox(height: 12),
+                FilledButton(
+                  onPressed: _restoreSession,
+                  child: const Text('Réessayer'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+    if (_authenticated == null) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+    if (_authenticated!) {
+      return HomePage(onLoggedOut: _expireSession);
+    }
+    return AuthPage(onAuthenticated: () {
+      setState(() => _authenticated = true);
+    });
+  }
+}
+
+class AuthPage extends StatefulWidget {
+  const AuthPage({super.key, required this.onAuthenticated});
+
+  final VoidCallback onAuthenticated;
+
+  @override
+  State<AuthPage> createState() => _AuthPageState();
+}
+
+class _AuthPageState extends State<AuthPage> {
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  bool _isRegister = false;
+  bool _isBusy = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isBusy = true;
+      _error = null;
+    });
+    try {
+      if (_isRegister) {
+        await ApiService.instance.register(
+          name: _nameController.text.trim(),
+          email: _emailController.text.trim(),
+          password: _passwordController.text,
+        );
+        if (mounted) setState(() => _isRegister = false);
+      }
+      await ApiService.instance.login(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+      widget.onAuthenticated();
+    } catch (error) {
+      if (mounted) setState(() => _error = error.toString());
+    } finally {
+      if (mounted) setState(() => _isBusy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    _isRegister ? 'Créer un compte' : 'Connexion',
+                    style: Theme.of(context).textTheme.headlineMedium,
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 24),
+                  if (_isRegister) ...[
+                    TextFormField(
+                      controller: _nameController,
+                      decoration: const InputDecoration(labelText: 'Nom'),
+                      textInputAction: TextInputAction.next,
+                      validator: (value) => value == null || value.trim().isEmpty
+                          ? 'Saisissez votre nom.'
+                          : null,
+                    ),
+                    const SizedBox(height: 12),
+                  ],
+                  TextFormField(
+                    controller: _emailController,
+                    decoration: const InputDecoration(labelText: 'E-mail'),
+                    keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.next,
+                    validator: (value) =>
+                        value == null || !value.contains('@') ? 'E-mail invalide.' : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: _passwordController,
+                    decoration: const InputDecoration(labelText: 'Mot de passe'),
+                    obscureText: true,
+                    textInputAction: TextInputAction.done,
+                    onFieldSubmitted: (_) => _submit(),
+                    validator: (value) => value == null || value.length < 8
+                        ? '8 caractères minimum.'
+                        : null,
+                  ),
+                  if (_error != null) ...[
+                    const SizedBox(height: 12),
+                    Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+                  ],
+                  const SizedBox(height: 20),
+                  FilledButton(
+                    onPressed: _isBusy ? null : _submit,
+                    child: _isBusy
+                        ? const CircularProgressIndicator()
+                        : Text(_isRegister ? 'Créer mon compte' : 'Se connecter'),
+                  ),
+                  TextButton(
+                    onPressed: _isBusy
+                        ? null
+                        : () => setState(() {
+                              _isRegister = !_isRegister;
+                              _error = null;
+                            }),
+                    child: Text(_isRegister
+                        ? 'J’ai déjà un compte'
+                        : 'Créer un nouveau compte'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  const HomePage({super.key, required this.onLoggedOut});
+
+  final VoidCallback onLoggedOut;
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -218,12 +529,35 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
+  bool _isLoggingOut = false;
+
+  Future<void> _logout() async {
+    setState(() => _isLoggingOut = true);
+    try {
+      await ApiService.instance.logout();
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Déconnexion locale effectuée, révocation impossible : $error')),
+        );
+      }
+    } finally {
+      widget.onLoggedOut();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Text(_selectedIndex == 0 ? 'Équipes' : 'Joueurs'),
+        actions: [
+          IconButton(
+            tooltip: 'Se déconnecter',
+            onPressed: _isLoggingOut ? null : _logout,
+            icon: const Icon(Icons.logout),
+          ),
+        ],
       ),
       body: IndexedStack(
         index: _selectedIndex,
@@ -271,7 +605,9 @@ class _TeamsPageState extends State<TeamsPage> {
   }
 
   void _retry() {
-    setState(() => _future = ApiService.instance.getTeams());
+    setState(() {
+      _future = ApiService.instance.getTeams();
+    });
   }
 
   @override
@@ -339,7 +675,9 @@ class _PlayersPageState extends State<PlayersPage> {
   }
 
   void _retry() {
-    setState(() => _future = ApiService.instance.getPlayers());
+    setState(() {
+      _future = ApiService.instance.getPlayers();
+    });
   }
 
   @override
@@ -424,10 +762,9 @@ class _TeamDetailsPageState extends State<TeamDetailsPage> {
             return _FailureView(
               error: snapshot.error!,
               onRetry: () {
-                setState(
-                  () => _future =
-                      ApiService.instance.getTeamDetails(widget.id),
-                );
+                setState(() {
+                  _future = ApiService.instance.getTeamDetails(widget.id);
+                });
               },
             );
           }
@@ -531,10 +868,9 @@ class _PlayerDetailsPageState extends State<PlayerDetailsPage> {
             return _FailureView(
               error: snapshot.error!,
               onRetry: () {
-                setState(
-                  () => _future =
-                      ApiService.instance.getPlayerDetails(widget.id),
-                );
+                setState(() {
+                  _future = ApiService.instance.getPlayerDetails(widget.id);
+                });
               },
             );
           }

@@ -10,9 +10,60 @@ public class SportManagerDbContext(DbContextOptions<SportManagerDbContext> optio
     public DbSet<Position> Positions => Set<Position>();
     public DbSet<Match> Matches => Set<Match>();
     public DbSet<Injury> Injuries => Set<Injury>();
+    public DbSet<User> Users => Set<User>();
+    public DbSet<RevokedToken> RevokedTokens => Set<RevokedToken>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<User>(entity =>
+        {
+            entity.ToTable("users");
+            entity.HasKey(user => user.Id);
+            entity.Property(user => user.Id).HasColumnName("id");
+            entity.Property(user => user.Name).HasColumnName("name").HasMaxLength(120).IsRequired();
+            entity.Property(user => user.Email).HasColumnName("email").HasMaxLength(254).IsRequired();
+            entity.Property(user => user.PasswordHash).HasColumnName("password_hash").HasMaxLength(512).IsRequired();
+            entity.HasIndex(user => user.Email).IsUnique().HasDatabaseName("ix_users_email");
+        });
+
+        modelBuilder.Entity<RevokedToken>(entity =>
+        {
+            entity.ToTable("revoked_tokens");
+            entity.HasKey(token => token.JwtId);
+            entity.Property(token => token.JwtId).HasColumnName("jwt_id").HasMaxLength(36);
+            entity.Property(token => token.ExpiresAt).HasColumnName("expires_at");
+            entity.HasIndex(token => token.ExpiresAt).HasDatabaseName("ix_revoked_tokens_expires_at");
+        });
+
+        modelBuilder.Entity<Team>()
+            .HasOne<User>()
+            .WithMany()
+            .HasForeignKey(team => team.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Player>()
+            .HasOne<User>()
+            .WithMany()
+            .HasForeignKey(player => player.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Match>()
+            .HasOne<User>()
+            .WithMany()
+            .HasForeignKey(match => match.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Injury>()
+            .HasOne<User>()
+            .WithMany()
+            .HasForeignKey(injury => injury.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Team>().HasIndex(team => team.UserId);
+        modelBuilder.Entity<Player>().HasIndex(player => player.UserId);
+        modelBuilder.Entity<Match>().HasIndex(match => match.UserId);
+        modelBuilder.Entity<Injury>().HasIndex(injury => injury.UserId);
+
         modelBuilder.Entity<Player>()
             .HasOne(p => p.Team)
             .WithMany(t => t.Players)

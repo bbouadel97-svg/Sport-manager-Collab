@@ -39,7 +39,14 @@
                         <span class="badge text-bg-warning">Recovery: @injury.RecoveryDays days</span>
                     </div>
 
-                    <button class="btn btn-sm btn-success" @onclick="() => MarkRecoveredAsync(injury.Id)">Mark Recovered</button>
+                    @if (injury.UserId.HasValue)
+                    {
+                        <button class="btn btn-sm btn-success" @onclick="() => MarkRecoveredAsync(injury.Id)">Mark Recovered</button>
+                    }
+                    else
+                    {
+                        <span class="badge text-bg-secondary">Shared demo · read-only</span>
+                    }
                 </div>
             </div>
         </div>

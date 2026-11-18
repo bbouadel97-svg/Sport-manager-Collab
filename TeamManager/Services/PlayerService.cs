@@ -4,12 +4,14 @@ using TeamManager.Models;
 
 namespace TeamManager.Services;
 
-public class PlayerService(SportManagerDbContext dbContext)
+public class PlayerService(SportManagerDbContext dbContext, CurrentUserService currentUser)
 {
     public async Task<List<Player>> GetAllAsync()
     {
+        var userId = await currentUser.GetRequiredUserIdAsync();
         return await dbContext.Players
             .AsNoTracking()
+            .Where(player => player.UserId == null || player.UserId == userId)
             .Include(p => p.Team)
             .Include(p => p.Position)
             .OrderBy(p => p.LastName)
@@ -19,16 +21,20 @@ public class PlayerService(SportManagerDbContext dbContext)
 
     public async Task<Player?> GetByIdAsync(int id)
     {
+        var userId = await currentUser.GetRequiredUserIdAsync();
         return await dbContext.Players
             .AsNoTracking()
+            .Where(player => player.Id == id && (player.UserId == null || player.UserId == userId))
             .Include(player => player.Team)
             .Include(player => player.Position)
-            .FirstOrDefaultAsync(player => player.Id == id);
+            .FirstOrDefaultAsync();
     }
 
     public async Task AddAsync(Player player)
     {
-        await ValidateTeamAndPositionAsync(player.TeamId, player.PositionId);
+        var userId = await currentUser.GetRequiredUserIdAsync();
+        await ValidateTeamAndPositionAsync(player.TeamId, player.PositionId, userId);
+        player.UserId = userId;
 
         try
         {
@@ -43,10 +49,12 @@ public class PlayerService(SportManagerDbContext dbContext)
 
     public async Task DeleteAsync(int id)
     {
-        var player = await dbContext.Players.FindAsync(id);
+        var userId = await currentUser.GetRequiredUserIdAsync();
+        var player = await dbContext.Players.FirstOrDefaultAsync(candidate =>
+            candidate.Id == id && candidate.UserId == userId);
         if (player is null)
         {
-            throw new InvalidOperationException("Player not found.");
+            throw new InvalidOperationException("Player not found or cannot be modified.");
         }
 
         try
@@ -62,13 +70,15 @@ public class PlayerService(SportManagerDbContext dbContext)
 
     public async Task UpdateAsync(Player updatedPlayer)
     {
-        var player = await dbContext.Players.FindAsync(updatedPlayer.Id);
+        var userId = await currentUser.GetRequiredUserIdAsync();
+        var player = await dbContext.Players.FirstOrDefaultAsync(candidate =>
+            candidate.Id == updatedPlayer.Id && candidate.UserId == userId);
         if (player is null)
         {
-            throw new InvalidOperationException("Player not found.");
+            throw new InvalidOperationException("Player not found or cannot be modified.");
         }
 
-        await ValidateTeamAndPositionAsync(updatedPlayer.TeamId, updatedPlayer.PositionId);
+        await ValidateTeamAndPositionAsync(updatedPlayer.TeamId, updatedPlayer.PositionId, userId);
 
         player.FirstName = updatedPlayer.FirstName;
         player.LastName = updatedPlayer.LastName;
@@ -93,7 +103,7 @@ public class PlayerService(SportManagerDbContext dbContext)
         }
     }
 
-    private async Task ValidateTeamAndPositionAsync(int teamId, int positionId)
+    private async Task ValidateTeamAndPositionAsync(int teamId, int positionId, int userId)
     {
         if (teamId <= 0)
         {
@@ -105,9 +115,9 @@ public class PlayerService(SportManagerDbContext dbContext)
             throw new InvalidOperationException("Missing position. Please select a position.");
         }
 
-        if (!await dbContext.Teams.AnyAsync(t => t.Id == teamId))
+        if (!await dbContext.Teams.AnyAsync(team => team.Id == teamId && team.UserId == userId))
         {
-            throw new InvalidOperationException("Selected team no longer exists.");
+            throw new InvalidOperationException("Selected team is not owned by the current user.");
         }
 
         if (!await dbContext.Positions.AnyAsync(p => p.Id == positionId))

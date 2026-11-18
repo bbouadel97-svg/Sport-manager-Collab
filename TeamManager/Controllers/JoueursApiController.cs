@@ -1,10 +1,13 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using TeamManager.DTOs;
 using TeamManager.Services;
 
 namespace TeamManager.Controllers;
 
 [ApiController]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 [Route("api")]
 public class JoueursApiController(PlayerService playerService) : ControllerBase
 {

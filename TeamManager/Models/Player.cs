@@ -6,6 +6,7 @@ namespace TeamManager.Models;
 public class Player
 {
     public int Id { get; set; }
+    public int? UserId { get; set; }
 
     [Required]
     [StringLength(50)]

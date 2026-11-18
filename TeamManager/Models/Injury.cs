@@ -5,6 +5,7 @@ namespace TeamManager.Models;
 public class Injury
 {
     public int Id { get; set; }
+    public int? UserId { get; set; }
 
     [Required]
     public int PlayerId { get; set; }

@@ -11,16 +11,20 @@ public class MatchSimulationResult
     public int? AwayScore { get; init; }
 }
 
-public class MatchSimulationService(SportManagerDbContext dbContext, InjuryService injuryService)
+public class MatchSimulationService(
+    SportManagerDbContext dbContext,
+    InjuryService injuryService,
+    CurrentUserService currentUser)
 {
     private readonly Random _random = new();
 
     public async Task<MatchSimulationResult> SimulateMatchAsync(int matchId)
     {
+        var userId = await currentUser.GetRequiredUserIdAsync();
         var match = await dbContext.Matches
             .Include(m => m.HomeTeam)
             .Include(m => m.AwayTeam)
-            .FirstOrDefaultAsync(m => m.Id == matchId);
+            .FirstOrDefaultAsync(m => m.Id == matchId && m.UserId == userId);
 
         if (match is null)
         {
@@ -41,11 +45,11 @@ public class MatchSimulationService(SportManagerDbContext dbContext, InjuryServi
         }
 
         var homePlayers = await dbContext.Players
-            .Where(p => p.TeamId == match.HomeTeamId && !p.IsInjured)
+            .Where(p => p.TeamId == match.HomeTeamId && p.UserId == userId && !p.IsInjured)
             .ToListAsync();
 
         var awayPlayers = await dbContext.Players
-            .Where(p => p.TeamId == match.AwayTeamId && !p.IsInjured)
+            .Where(p => p.TeamId == match.AwayTeamId && p.UserId == userId && !p.IsInjured)
             .ToListAsync();
 
         if (homePlayers.Count < 3 || awayPlayers.Count < 3)
@@ -68,7 +72,7 @@ public class MatchSimulationService(SportManagerDbContext dbContext, InjuryServi
         match.IsPlayed = true;
 
         var allPlayersWhoPlayed = homePlayers.Concat(awayPlayers).ToList();
-        injuryService.CreateMatchInjuries(allPlayersWhoPlayed);
+        injuryService.CreateMatchInjuries(allPlayersWhoPlayed, userId);
 
         try
         {

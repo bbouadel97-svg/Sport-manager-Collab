@@ -1,0 +1,25 @@
+@model TeamManager.DTOs.LoginRequest
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Connexion - Sport Manager</title>
+</head>
+<body>
+<main>
+    <h1>Connexion</h1>
+    @Html.ValidationSummary()
+    <form method="post" action="/account/login">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl" />
+        <label for="email">E-mail</label>
+        <input id="email" name="Email" type="email" value="@Model.Email" required />
+        <label for="password">Mot de passe</label>
+        <input id="password" name="Password" type="password" required />
+        <button type="submit">Se connecter</button>
+    </form>
+    <p><a href="/account/register">Créer un compte</a></p>
+</main>
+</body>
+</html>

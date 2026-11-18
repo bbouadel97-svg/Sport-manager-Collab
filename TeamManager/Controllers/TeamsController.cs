@@ -1,8 +1,11 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using TeamManager.Services;
 
 namespace TeamManager.Controllers;
 
+[Authorize(AuthenticationSchemes = CookieAuthenticationDefaults.AuthenticationScheme)]
 public class TeamsController(TeamService teamService) : Controller
 {
     public async Task<IActionResult> Index()
